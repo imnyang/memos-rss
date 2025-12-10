@@ -1,0 +1,23 @@
+{
+  "name": "yanmang",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run ./src/index.ts",
+    "dev": "bun --hot run ./src/index.ts",
+    "build": "bun build ./src/index.ts --outfile yanmang --compile --minify",
+    "lint": "biome check .",
+    "lint:fix": "biome format ."
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "rss-parser": "^3.13.0"
+  }
+}
