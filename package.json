@@ -6,7 +6,7 @@
   "scripts": {
     "start": "bun run ./src/index.ts",
     "dev": "bun --hot run ./src/index.ts",
-    "build": "bun build ./src/index.ts --outfile yanmang --compile --minify",
+    "build": "bun build ./src/index.ts --outfile memos-rss --compile --minify",
     "lint": "biome check .",
     "lint:fix": "biome format ."
   },

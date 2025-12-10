@@ -18,14 +18,14 @@ RUN bun run build
 
 FROM alpine:latest as runtime
 
-RUN apk add --no-cache tzdata
+RUN apk add --no-cache tzdata libstdc++ libgcc
 
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 
-COPY --from=build /app/yanmang .
+COPY --from=build /app/memos-rss .
 COPY --from=build /app/version .
 
-CMD ["./yanmang"]
+CMD ["./memos-rss"]
