@@ -5,6 +5,8 @@ import { processedItems, saveCurrentState } from "./storage";
 import type { RssSource } from "../type/types";
 import rssConfig from "@/../rss.toml";
 
+console.log("Loaded RSS Config:", JSON.stringify(rssConfig, null, 2));
+
 export async function checkRssFeeds(client: Client): Promise<void> {
   console.log(`[${new Date().toISOString()}] Checking RSS feeds...`);
 
