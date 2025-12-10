@@ -1,6 +1,8 @@
 FROM oven/bun:alpine as build
 
 RUN apk add --no-cache tzdata git
+ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
 
@@ -14,18 +16,5 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 RUN bun run ./cli/git-commit-build.ts
-RUN bun run build
 
-FROM alpine:latest as runtime
-
-RUN apk add --no-cache tzdata libstdc++ libgcc
-
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-WORKDIR /app
-
-COPY --from=build /app/memos-rss .
-COPY --from=build /app/version .
-
-CMD ["./memos-rss"]
+CMD ["bun", "run", "start"]
