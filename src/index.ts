@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+import { ActivityType, Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { token, INTERVAL_MS } from "./lib/config";
 import { commands, handleClearForum } from "./commands";
 import { checkRssFeeds } from "./lib/rss";
@@ -7,8 +7,25 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
+async function getGitCommitHash(): Promise<string> {
+	try {
+		const data = await Bun.file("./version").text();
+		return data.trim();
+	} catch {
+		return "unknown";
+	}
+}
+
 client.once("clientReady", async () => {
   console.log(`Logged in as: ${client.user?.tag}`);
+  
+	// Git commit hash로 상태 설정
+	const commitHash = await getGitCommitHash();
+	client.user?.setActivity({
+		name: `${commitHash}`,
+		type: ActivityType.Playing,
+	});
+	console.log(`Version: ${commitHash}`);
 
   // Register slash commands
   try {

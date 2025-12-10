@@ -1,8 +1,6 @@
 FROM oven/bun:alpine as build
 
-# Set timezone to KST
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apk add --no-cache tzdata git
 
 WORKDIR /app
 
@@ -19,6 +17,8 @@ RUN bun run ./cli/git-commit-build.ts
 RUN bun run build
 
 FROM alpine:latest as runtime
+
+RUN apk add --no-cache tzdata
 
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
