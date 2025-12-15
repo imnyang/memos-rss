@@ -1,5 +1,6 @@
 import { ForumChannel, ThreadAutoArchiveDuration, Client } from "discord.js";
 import type Parser from "rss-parser";
+import TurndownService from "turndown";
 import { parser } from "./config";
 import { processedItems, saveCurrentState } from "./storage";
 import type { RssSource } from "../type/types";
@@ -117,13 +118,17 @@ async function postToForum(
 
 function buildContent(config: RssSource, item: Parser.Item): string {
   const parts: string[] = [];
+  const turndownService = new TurndownService();
 
   if (item.link) {
     parts.push(`# ${config.emoji} | [${item.title}](<${item.link}>)`);
   }
 
-  if (item.contentSnippet) {
-    parts.push(`\n${item.content}\n`);
+  if (item.content) {
+    const markdown = turndownService.turndown(item.content);
+    parts.push(`\n${markdown.trim()}\n`);
+  } else if (item.contentSnippet) {
+    parts.push(`\n${item.contentSnippet}\n`);
   }
 
   if (item.pubDate) {
