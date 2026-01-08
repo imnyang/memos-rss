@@ -4,9 +4,24 @@ tag = "1448338238963056691"
 emoji = "🤓"
 rss = "https://feeds.feedburner.com/geeknews-feed"
 
+[geeknews.setup]
+title = "title"
+link = "link"
+content = "content"
+author = "author.name"
+authorLink = "author.uri"
+pubDate = "published"
+
 [svrforum]
 channel = "1448338163864174867"
 tag = "1448338289147908108"
 emoji = "💻"
 rss = "https://svrforum.com/rss"
 category_filter = ["유머&정보"]
+
+[svrforum.setup]
+title = "title"
+link = "link"
+content = "description"
+author = "dc:creator"
+pubDate = "pubDate"
