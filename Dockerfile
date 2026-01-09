@@ -1,20 +1,16 @@
-FROM oven/bun:alpine as build
+FROM rust:slim as builder
 
-RUN apk add --no-cache tzdata git
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-WORKDIR /app
-
-# Copy dependency files first (improves layer caching)
-COPY package.json bun.lock ./
-
-# Install dependencies (cached until package files change)
-RUN bun install --frozen-lockfile
-
-# Copy application code
+WORKDIR /usr/src/app
 COPY . .
 
-RUN bun run ./cli/git-commit-build.ts
+RUN cargo build --release
 
-CMD ["bun", "run", "start"]
+FROM debian:13-slim
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/app
+COPY --from=builder /usr/src/app/target/release/memos-rss-rs .
+COPY --from=builder /usr/src/app/rss.toml .
+
+CMD ["./memos-rss-rs"]

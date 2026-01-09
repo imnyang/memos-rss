@@ -1,12 +1,10 @@
 services:
-  # Main Discord bot application
-  bot:
+  memos-rss:
     image: ghcr.io/imnyang/memos-rss/bot:latest
-    container_name: bot
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     volumes:
-      # Mount any persistent data directories if needed
-      - ./rss.toml:/app/rss.toml
-      - ./processed.json:/app/processed.json
+      - ./processed_items.db:/usr/app/processed_items.db
+#      - ./processed.json:/app/processed.json # if you need to migration
+      - ./rss.toml:/usr/app/rss.toml
