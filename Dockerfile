@@ -3,6 +3,7 @@ FROM rust:slim as builder
 WORKDIR /usr/src/app
 COPY . .
 
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 RUN cargo build --release
 
 FROM debian:13-slim
