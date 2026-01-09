@@ -4,9 +4,21 @@ use htmd::HtmlToMarkdown;
 use feed_rs::model::{Feed, Entry};
 
 pub async fn fetch_feed(url: &str) -> Result<Feed> {
-    let content = reqwest::get(url).await?.bytes().await?;
-    let feed = feed_rs::parser::parse(&content[..])?;
-    Ok(feed)
+    let client = reqwest::Client::builder()
+        .user_agent("NekoRSS/1.0 (+abuse@imnya.ng)")
+        .build()?;
+    
+    let resp = client.get(url).send().await?;
+    let status = resp.status();
+    let content = resp.bytes().await?;
+    
+    match feed_rs::parser::parse(&content[..]) {
+        Ok(feed) => Ok(feed),
+        Err(e) => {
+            let body_preview = String::from_utf8_lossy(&content).chars().take(200).collect::<String>();
+            anyhow::bail!("Failed to parse feed (Status: {}): {} | Body preview: {}", status, e, body_preview);
+        }
+    }
 }
 
 pub fn get_field_value(
