@@ -5,6 +5,5 @@ services:
     env_file:
       - .env
     volumes:
-      - ./processed_items.db:/usr/app/processed_items.db
-#      - ./processed.json:/app/processed.json # if you need to migration
+      - ./data:/usr/app/data
       - ./rss.toml:/usr/app/rss.toml

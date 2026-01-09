@@ -28,10 +28,10 @@ async fn main() -> Result<()> {
     let config: FullConfig = toml::from_str(&rss_toml_content)?;
     let config = Arc::new(config);
     
-    let storage = Arc::new(Storage::new("processed_items.db")?);
+    let storage = Arc::new(Storage::new("./data/processed_items.db")?);
     
     // Migration from old processed.json if it exists
-    let old_processed_path = "../memos-rss/processed.json";
+    let old_processed_path = "./data/processed.json";
     if std::path::Path::new(old_processed_path).exists() {
         println!("Found old processed.json, migrating data...");
         let content = std::fs::read_to_string(old_processed_path)?;
