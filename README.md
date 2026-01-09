@@ -7,7 +7,6 @@ Discord RSS monitor written in Rust.
 - Post new items to Discord Forum channels.
 - Category filtering support.
 - Embedded storage using `sled`.
-- Slash command support.
 
 ## Setup
 1. Create a `.env` file with:
@@ -20,6 +19,5 @@ Discord RSS monitor written in Rust.
 
 ## Docker
 ```bash
-docker build -t memos-rss-rs .
-docker run --env-file .env memos-rss-rs
+docker run --env-file .env ghcr.io/imnyang/memos-rss/bot:latest
 ```

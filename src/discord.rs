@@ -31,6 +31,17 @@ impl EventHandler for Handler {
         if let Interaction::Command(command) = interaction {
             if command.data.name == "clear-forum" {
                 let _ = command.defer(&ctx.http).await;
+
+                // check user is guild admin
+                let guild_id = command.guild_id.unwrap();
+                let guild = guild_id.to_guild_cached(&ctx.cache).await.unwrap();
+                let member = guild.get_member(&ctx.http, command.user.id).await.unwrap();
+                if !member.permissions(&guild).unwrap().administrator {
+                    let _ = command.edit_response(&ctx.http, serenity::builder::EditInteractionResponse::new()
+                        .content("You do not have permission to use this command."))
+                        .await;
+                    return;
+                }
                 
                 let mut count = 0;
                 for rss_config in self.config.values() {
