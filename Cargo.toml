@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "standard_framework"] }
+serenity = { version = "0.12", default-features = false, features = ["full", "rustls_backend"] }
 tokio = { version = "1", features = ["full"] }
 feed-rs = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

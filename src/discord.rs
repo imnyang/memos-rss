@@ -33,10 +33,12 @@ impl EventHandler for Handler {
                 let _ = command.defer(&ctx.http).await;
 
                 // check user is guild admin
-                let guild_id = command.guild_id.unwrap();
-                let guild = guild_id.to_guild_cached(&ctx.cache).await.unwrap();
-                let member = guild.get_member(&ctx.http, command.user.id).await.unwrap();
-                if !member.permissions(&guild).unwrap().administrator {
+                let is_admin = command.member.as_ref()
+                    .and_then(|m| m.permissions)
+                    .map(|p| p.administrator())
+                    .unwrap_or(false);
+
+                if !is_admin {
                     let _ = command.edit_response(&ctx.http, serenity::builder::EditInteractionResponse::new()
                         .content("You do not have permission to use this command."))
                         .await;
