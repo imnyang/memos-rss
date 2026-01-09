@@ -1,16 +1,16 @@
 use crate::config::RssConfig;
 use anyhow::Result;
 use htmd::HtmlToMarkdown;
-use rss::Channel;
+use feed_rs::model::{Feed, Entry};
 
-pub async fn fetch_feed(url: &str) -> Result<Channel> {
+pub async fn fetch_feed(url: &str) -> Result<Feed> {
     let content = reqwest::get(url).await?.bytes().await?;
-    let channel = Channel::read_from(&content[..])?;
-    Ok(channel)
+    let feed = feed_rs::parser::parse(&content[..])?;
+    Ok(feed)
 }
 
 pub fn get_field_value(
-    item: &rss::Item,
+    item: &Entry,
     config: &RssConfig,
     field: &str,
 ) -> Option<String> {
@@ -25,54 +25,33 @@ pub fn get_field_value(
         _ => None,
     };
 
-    if let Some(p) = path {
-        // Simple JSON path-like resolution for extensions if needed
-        // For now, check standard fields first, then extensions
-        resolve_path(item, p)
+    if let Some(_p) = path {
+        // Path-based resolution is harder with feed-rs because it's already abstracted.
+        // We'll map some known paths to feed-rs fields.
+        match _p.as_str() {
+            "title" => item.title.as_ref().map(|t| t.content.clone()),
+            "link" => item.links.first().map(|l| l.href.clone()),
+            "description" | "summary" => item.summary.as_ref().map(|s| s.content.clone()),
+            "content" => item.content.as_ref().and_then(|c| c.body.clone()),
+            "published" | "pubDate" => item.published.map(|d| d.to_rfc3339()),
+            "dc:creator" | "author.name" => item.authors.first().map(|a| a.name.clone()),
+            "author.uri" => item.authors.first().and_then(|a| a.uri.clone()),
+            _ => None,
+        }
     } else {
         match field {
-            "title" => item.title().map(|s| s.to_string()),
-            "link" => item.link().map(|s| s.to_string()),
-            "content" => item.content().or(item.description()).map(|s| s.to_string()),
-            "author" => item.author().map(|s| s.to_string()),
-            "pubDate" => item.pub_date().map(|s| s.to_string()),
+            "title" => item.title.as_ref().map(|t| t.content.clone()),
+            "link" => item.links.first().map(|l| l.href.clone()),
+            "content" => item.content.as_ref().and_then(|c| c.body.clone())
+                .or_else(|| item.summary.as_ref().map(|s| s.content.clone())),
+            "author" => item.authors.first().map(|a| a.name.clone()),
+            "pubDate" => item.published.map(|d| d.to_rfc3339()),
             _ => None,
         }
     }
 }
 
-fn resolve_path(item: &rss::Item, path: &str) -> Option<String> {
-    // This is a simplified version. The TS version used a more complex object traversal.
-    // rss-rs doesn't expose a raw JSON-like structure easily for all extensions.
-    // We'll handle common cases or use extensions() if needed.
-    
-    match path {
-        "title" => item.title().map(|s| s.to_string()),
-        "link" => item.link().map(|s| s.to_string()),
-        "description" => item.description().map(|s| s.to_string()),
-        "content" => item.content().map(|s| s.to_string()),
-        "pubDate" => item.pub_date().map(|s| s.to_string()),
-        "dc:creator" => item.dublin_core_ext()
-            .and_then(|dc| dc.creators().first())
-            .map(|s| s.to_string()),
-        _ => {
-            // Check extensions
-            for (ns, ext) in item.extensions() {
-                if path.starts_with(ns) {
-                    let local_name = &path[ns.len()+1..];
-                    if let Some(v) = ext.get(local_name) {
-                        if let Some(first) = v.first() {
-                            return first.value().map(|s| s.to_string());
-                        }
-                    }
-                }
-            }
-            None
-        }
-    }
-}
-
-pub fn build_content(config: &RssConfig, item: &rss::Item) -> String {
+pub fn build_content(config: &RssConfig, item: &Entry) -> String {
     let mut parts = Vec::new();
     let ht = HtmlToMarkdown::new();
 
@@ -81,7 +60,7 @@ pub fn build_content(config: &RssConfig, item: &rss::Item) -> String {
     let content = get_field_value(item, config, "content");
     let author = get_field_value(item, config, "author");
     let author_link = get_field_value(item, config, "authorLink");
-    let pub_date = get_field_value(item, config, "pubDate");
+    let pub_date = item.published;
 
     if let Some(l) = link.as_ref() {
         parts.push(format!("# {} | [{}](<{}>)", config.emoji, title, l));
@@ -103,11 +82,7 @@ pub fn build_content(config: &RssConfig, item: &rss::Item) -> String {
     }
 
     if let Some(pd) = pub_date {
-        if let Ok(dt) = chrono::DateTime::parse_from_rfc2822(&pd) {
-            parts.push(format!("\n-# 🕐 <t:{}:f>", dt.timestamp()));
-        } else if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&pd) {
-             parts.push(format!("\n-# 🕐 <t:{}:f>", dt.timestamp()));
-        }
+        parts.push(format!("\n-# 🕐 <t:{}:f>", pd.timestamp()));
     }
 
     let joined = parts.join("\n");

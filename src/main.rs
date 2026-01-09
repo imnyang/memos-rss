@@ -85,30 +85,29 @@ async fn check_feed(
 ) -> Result<()> {
     let feed = rss::fetch_feed(&config.rss).await?;
     
-    // items usually come in descending order (newest first)
+    // entries usually come in descending order (newest first)
     // we should probably reverse them to process oldest first to maintain order in Discord
-    let mut items = feed.items().to_vec();
+    let mut items = feed.entries;
     items.reverse();
 
     for item in items {
         let item_id = rss::get_field_value(&item, config, "link")
-            .or_else(|| item.guid().map(|g| g.value().to_string()))
-            .unwrap_or_default();
+            .unwrap_or_else(|| item.id.clone());
             
         if item_id.is_empty() { continue; }
         
         if !storage.is_processed(name, &item_id)? {
             // Category check
             if let Some(filters) = &config.category_filter {
-                let item_categories: Vec<_> = item.categories().iter().map(|c| c.name()).collect();
-                if item_categories.iter().any(|c| filters.contains(&c.to_string())) {
+                let item_categories: Vec<_> = item.categories.iter().map(|c| c.term.clone()).collect();
+                if item_categories.iter().any(|c| filters.contains(c)) {
                     println!("[{}] Filtered by category: {:?}", name, item_categories);
                     storage.mark_processed(name, &item_id)?;
                     continue;
                 }
             }
 
-            println!("[{}] New item: {:?}", name, item.title());
+            println!("[{}] New item: {:?}", name, item.title.as_ref().map(|t| &t.content));
             let content = rss::build_content(config, &item);
             
             let channel_id = config.channel.parse::<u64>()?;
@@ -121,17 +120,12 @@ async fn check_feed(
             let post = serenity::builder::CreateForumPost::new(
                 title,
                 serenity::builder::CreateMessage::new().content(content)
-            ).add_applied_tag(serenity::model::id::ForumTagId::new(tag_id));
+            ).add_applied_tag(serenity::all::ForumTagId::new(tag_id));
             
             if let Err(e) = channel.create_forum_post(&http, post).await {
                 eprintln!("[{}] Failed to create forum post: {}", name, e);
                 continue;
             }
-            
-            // After creating thread, post the message if needed, 
-            // but CreateThread in Serenity for Forum usually takes message too?
-            // Actually, for Forum channels, the first message is part of the thread creation.
-            // Let's refine this if needed based on Serenity 0.12 API.
             
             storage.mark_processed(name, &item_id)?;
         }
