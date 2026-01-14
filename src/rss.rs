@@ -43,7 +43,9 @@ pub fn extract_image_url(item: &Entry) -> Option<String> {
     // 첫 번째로 media:content에서 이미지 찾기
     item.media
         .iter()
-        .find(|m| m.content.iter().any(|c| c.medium.as_deref() == Some("image")))
+        .find(|m| m.content.iter().any(|c| {
+            c.content_type.as_deref().map_or(false, |ct| ct.starts_with("image/"))
+        }))
         .and_then(|m| m.content.first())
         .and_then(|c| c.url.clone())
         .map(|url| url.to_string())
