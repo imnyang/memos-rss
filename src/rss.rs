@@ -44,7 +44,7 @@ pub fn extract_image_url(item: &Entry) -> Option<String> {
     item.media
         .iter()
         .find(|m| m.content.iter().any(|c| {
-            c.content_type.as_deref().map_or(false, |ct| ct.starts_with("image/"))
+            c.content_type.as_ref().map_or(false, |ct| ct.to_string().starts_with("image/"))
         }))
         .and_then(|m| m.content.first())
         .and_then(|c| c.url.clone())
