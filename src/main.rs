@@ -77,6 +77,16 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+async fn download_image(url: &str) -> Result<Vec<u8>> {
+    let client = reqwest::Client::builder()
+        .user_agent(std::env::var("RSS_USER_AGENT").unwrap_or_else(|_| "NekoRSS/1.0".to_string()))
+        .build()?;
+    
+    let response = client.get(url).send().await?;
+    let data = response.bytes().await?.to_vec();
+    Ok(data)
+}
+
 async fn check_feed(
     name: &str,
     config: &crate::config::RssConfig,
@@ -116,10 +126,32 @@ async fn check_feed(
             let title = rss::get_field_value(&item, config, "title").unwrap_or_else(|| "Untitled".to_string());
             let tag_id = config.tag.parse::<u64>()?;
             
+            // Extract image if needed
+            let image_url = if config.upload_image {
+                rss::extract_image_url(&item)
+            } else {
+                None
+            };
+            
+            // Create message with image if available
+            let mut message_builder = serenity::builder::CreateMessage::new().content(content);
+            if let Some(img_url) = image_url {
+                match download_image(&img_url).await {
+                    Ok(image_data) => {
+                        message_builder = message_builder.add_file(
+                            serenity::all::CreateAttachment::bytes(image_data, "image.jpg")
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("[{}] Failed to download image: {}", name, e);
+                    }
+                }
+            }
+            
             // Post to forum
             let post = serenity::builder::CreateForumPost::new(
                 title,
-                serenity::builder::CreateMessage::new().content(content)
+                message_builder
             ).add_applied_tag(serenity::all::ForumTagId::new(tag_id));
             
             if let Err(e) = channel.create_forum_post(&http, post).await {

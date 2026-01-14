@@ -2,10 +2,11 @@ use crate::config::RssConfig;
 use anyhow::Result;
 use htmd::HtmlToMarkdown;
 use feed_rs::model::{Feed, Entry};
+use regex::Regex;
 
 pub async fn fetch_feed(url: &str) -> Result<Feed> {
     let client = reqwest::Client::builder()
-        .user_agent("NekoRSS/1.0 (+abuse@imnya.ng)")
+        .user_agent(std::env::var("RSS_USER_AGENT").unwrap_or_else(|_| "NekoRSS/1.0 (+https://github.com/imnyang/memos-rss)".to_string()))
         .build()?;
     
     let resp = client.get(url).send().await?;
@@ -19,6 +20,33 @@ pub async fn fetch_feed(url: &str) -> Result<Feed> {
             anyhow::bail!("Failed to parse feed (Status: {}): {} | Body preview: {}", status, e, body_preview);
         }
     }
+}
+
+pub fn should_include_by_link(link: Option<&String>, link_filters: Option<&Vec<String>>) -> bool {
+    match (link, link_filters) {
+        (Some(link_url), Some(filters)) => {
+            // 모든 필터 중 하나라도 매치되면 포함
+            filters.iter().any(|filter| {
+                if let Ok(regex) = Regex::new(filter) {
+                    regex.is_match(link_url)
+                } else {
+                    false
+                }
+            })
+        }
+        (_, None) => true, // 필터가 없으면 모두 포함
+        (None, Some(_)) => false, // 필터가 있는데 link가 없으면 제외
+    }
+}
+
+pub fn extract_image_url(item: &Entry) -> Option<String> {
+    // 첫 번째로 media:content에서 이미지 찾기
+    item.media
+        .iter()
+        .find(|m| m.content.iter().any(|c| c.medium.as_deref() == Some("image")))
+        .and_then(|m| m.content.first())
+        .and_then(|c| c.url.clone())
+        .map(|url| url.to_string())
 }
 
 pub fn get_field_value(
@@ -38,8 +66,6 @@ pub fn get_field_value(
     };
 
     if let Some(_p) = path {
-        // Path-based resolution is harder with feed-rs because it's already abstracted.
-        // We'll map some known paths to feed-rs fields.
         match _p.as_str() {
             "title" => item.title.as_ref().map(|t| t.content.clone()),
             "link" => item.links.first().map(|l| l.href.clone()),
@@ -93,9 +119,15 @@ pub fn build_content(config: &RssConfig, item: &Entry) -> String {
         parts.push(format!("\n{}\n", markdown.trim()));
     }
 
-    if let Some(pd) = pub_date {
-        parts.push(format!("\n-# 🕐 <t:{}:f>", pd.timestamp()));
-    }
+    let timestamp = pub_date
+        .map(|pd| pd.timestamp())
+        .unwrap_or_else(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64
+        });
+    parts.push(format!("\n-# 🕐 <t:{}:f>", timestamp));
 
     let joined = parts.join("\n");
     if joined.is_empty() {

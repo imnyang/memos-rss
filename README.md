@@ -12,7 +12,7 @@ Discord RSS monitor written in Rust.
 1. Create a `.env` file with:
    ```
    DISCORD_TOKEN=your_token
-   INTERVAL_MINUTES=5
+   INTERVAL_MINUTES=15
    ```
 2. Configure `rss.toml`.
 3. Run with `cargo run`.

@@ -8,6 +8,9 @@ pub struct RssConfig {
     pub emoji: String,
     pub rss: String,
     pub category_filter: Option<Vec<String>>,
+    pub link_filter: Option<Vec<String>>,
+    #[serde(default)]
+    pub upload_image: bool,
     pub setup: Option<SetupConfig>,
 }
 

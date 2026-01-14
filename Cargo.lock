@@ -1033,6 +1033,7 @@ dependencies = [
  "dotenvy",
  "feed-rs",
  "htmd",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

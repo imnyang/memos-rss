@@ -7,3 +7,4 @@ services:
     volumes:
       - ./data:/usr/app/data
       - ./rss.toml:/usr/app/rss.toml
+      - /etc/localtime:/etc/localtime:ro

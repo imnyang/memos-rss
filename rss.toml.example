@@ -25,3 +25,17 @@ link = "link"
 content = "description"
 author = "dc:creator"
 pubDate = "pubDate"
+
+[quasarzone]
+channel = "1448338163864174867"
+tag = "1461101612960583753"
+emoji = "🪐"
+rss = "https://quasarzone.com/rss.xml"
+link_filter = ["^https?:\/\/[^\/]+\/bbs\/qn_game(\/|$)", "^https?:\/\/[^\/]+\/bbs\/qn_partner(\/|$)"]
+upload_image = true
+
+[quasarzone.setup]
+title = "title"
+link = "link"
+content = "description"
+author = "dc:creator"
